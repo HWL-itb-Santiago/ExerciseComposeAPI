@@ -1,4 +1,4 @@
-package cat.itb.m78.exercices.Counter
+package cat.itb.m78.exercices.RememberMe
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -7,27 +7,31 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cat.itb.m78.exercices.Settings.ViewModelCounter
+import cat.itb.m78.exercices.Settings.ViewModelRememberMe
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
-fun Counter()
+fun RememberMe()
 {
-    val viewModelCounter = viewModel{ViewModelCounter()}
-    Counter(viewModelCounter.countViews)
+    val viewModelRememberMe = viewModel { ViewModelRememberMe() }
+    val nameState by viewModelRememberMe.name.collectAsState()
+    RememberMe(nameState) { viewModelRememberMe.saveName(it) }
 }
+
 @Composable
-fun Counter(counterView: Int)
+fun RememberMe(nameToRemember : String, saveName: (String)->Unit)
 {
+    var input = remember {mutableStateOf("")}
     Box(
         modifier = Modifier.background(color = Color.Black)
             .fillMaxSize()
@@ -41,9 +45,23 @@ fun Counter(counterView: Int)
         )
         {
             Text(
-                text = "Usted ha visitado esta pagina un total de ${counterView} veces",
+                text = "Hello ${nameToRemember}",
                 color = Color.White
             )
+            TextField(
+                value = input.value,
+                onValueChange = {input.value = it}
+            )
+            Button(
+                onClick = {
+                    saveName(input.value)
+                }
+            )
+            {
+                Text(
+                    text = "Guardar"
+                )
+            }
         }
     }
 }
