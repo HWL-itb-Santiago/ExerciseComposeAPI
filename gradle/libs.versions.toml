@@ -13,6 +13,8 @@ androidx-navigation = "2.8.0-alpha10"
 kotlinx-serialization = "1.7.3"
 kotlinx-datetime = "0.6.1"
 hotreload = "1.0.0-dev.32.1"
+roomCompiler = "2.6.1"
+roomCommonJvm = "2.7.0-rc02"
 
 [libraries]
 
@@ -38,6 +40,8 @@ androidx-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycl
 androidx-navigation-composee = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }
+androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
 
 [plugins]
 

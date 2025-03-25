@@ -4,11 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import cat.itb.m78.exercices.APICountries.Countries
-import cat.itb.m78.exercices.APIEmbalsadoras.Embalssadoras
-import cat.itb.m78.exercices.APIJoke.Joke
-import cat.itb.m78.exercices.Counter.Counter
-import cat.itb.m78.exercices.RememberMe.RememberMe
+import cat.itb.m78.exercices.APIAgents.Agents
 import kotlinx.serialization.Serializable
 
 object Destination
@@ -28,7 +24,7 @@ fun Navigation()
     {
         composable<Destination.Screen1>
         {
-            Embalssadoras()
+            Agents()
         }
     }
 }
