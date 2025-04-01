@@ -7,89 +7,109 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.parameters
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+
 @Serializable
-data class Root(
-    val status: Long,
-    val data: List<Agent>,
+data class GameResponse(
+    val count: Long,
+    val next: String,
+    val previous: String? = null,
+    val results: List<Result>,
 )
+
 @Serializable
-data class Agent(
-    val uuid: String,
-    val displayName: String,
-    val description: String,
-    val developerName: String,
-    val releaseDate: String,
-    val characterTags: List<String>?,
-    val displayIcon: String,
-    val displayIconSmall: String?,
-    val bustPortrait: String?,
-    val fullPortrait: String?,
-    val fullPortraitV2: String?,
-    val killfeedPortrait: String,
-    val background: String?,
-    val backgroundGradientColors: List<String>,
-    val assetPath: String,
-    val isFullPortraitRightFacing: Boolean,
-    val isPlayableCharacter: Boolean,
-    val isAvailableForTest: Boolean,
-    val isBaseContent: Boolean,
-    val role: Role?,
-    val recruitmentData: RecruitmentData?,
-    val abilities: List<Ability>,
-    val voiceLine: String?,
+data class Result(
+    val id: Long,
+    val slug: String,
+    val name: String,
+    val released: String,
+    val tba: Boolean,
+    @SerialName("background_image")
+    val backgroundImage: String,
+    val rating: Double? = 0.0,
+    @SerialName("rating_top")
+    val ratingTop: Long,
+    //val ratings: Map<String>,
+    @SerialName("ratings_count")
+    val ratingsCount: Long,
+    @SerialName("reviews_text_count")
+    val reviews_text_count: Int? = 0, //  Asegura que sea
+    val added: Long,
+    //@SerialName("added_by_status")
+    //val addedByStatus: Map<String, String>,
+    val metacritic: Long,
+    val playtime: Long,
+    @SerialName("suggestions_count")
+    val suggestionsCount: Long,
+    val updated: String,
+    @SerialName("esrb_rating")
+    val esrbRating: EsrbRating,
+    val platforms: List<Platform>? = null,
 )
+
 @Serializable
-data class Role(
-    val uuid: String,
-    val displayName: String,
-    val description: String,
-    val displayIcon: String,
-    val assetPath: String,
+data class EsrbRating(
+    val id: Long,
+    val slug: String,
+    val name: String,
 )
+
 @Serializable
-data class RecruitmentData(
-    val counterId: String,
-    val milestoneId: String,
-    val milestoneThreshold: Long,
-    val useLevelVpCostOverride: Boolean,
-    val levelVpCostOverride: Long,
-    val startDate: String,
-    val endDate: String,
+data class Platform(
+    val platform: Platform2,
+    @SerialName("released_at")
+    val releasedAt: String,
+    val requirements: Requirements? = null
 )
+
 @Serializable
-data class Ability(
-    val slot: String,
-    val displayName: String,
-    val description: String,
-    val displayIcon: String?,
+data class Platform2(
+    val id: Long,
+    val slug: String,
+    val name: String,
+)
+
+@Serializable
+data class Requirements(
+    val minimum: String,
+    val recommended: String,
 )
 
 object AgentAPI
 {
-    private val url = "https://valorant-api.com/v1/agents"
-    private val client = HttpClient(){
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-            })
+    suspend fun fetchGames(): GameResponse
+    {
+        val client = HttpClient {
+            install(ContentNegotiation) {
+                json(Json
+                {
+                    ignoreUnknownKeys = true
+                })
+            }
         }
+
+        val response: HttpResponse = client.get("https://api.rawg.io/api/games?key=f065fafb79d44605a13510e272fc4e75")
+
+        return response.body<GameResponse>()
     }
-    suspend fun agentList() = client.get(url).body<List<Root>>()
 }
 
 class ViewModelAgents: ViewModel()
 {
-    val data = mutableStateListOf<Root?>()
+    val data = mutableStateListOf<Result?>()
     init {
         viewModelScope.launch(Dispatchers.Default)
         {
-            AgentAPI.agentList().forEach { it ->
+            AgentAPI.fetchGames().results.forEach {it ->
                 data.add(it)
             }
         }
