@@ -12,6 +12,9 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.parameters
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -86,7 +89,7 @@ data class Requirements(
 
 object AgentAPI
 {
-    suspend fun fetchGames(): GameResponse
+    suspend fun fetchGames(currentPage: Int): GameResponse
     {
         val client = HttpClient {
             install(ContentNegotiation) {
@@ -97,8 +100,12 @@ object AgentAPI
             }
         }
 
-        val response: HttpResponse = client.get("https://api.rawg.io/api/games?key=f065fafb79d44605a13510e272fc4e75")
-
+        if (currentPage == 0)
+        {
+            val response: HttpResponse = client.get("https://api.rawg.io/api/games?key=f065fafb79d44605a13510e272fc4e75")
+            return response.body<GameResponse>()
+        }
+        val response: HttpResponse = client.get("https://api.rawg.io/api/games?key=f065fafb79d44605a13510e272fc4e75&page=${currentPage}")
         return response.body<GameResponse>()
     }
 }
@@ -106,10 +113,39 @@ object AgentAPI
 class ViewModelAgents: ViewModel()
 {
     val data = mutableStateListOf<Result?>()
+    var _currentPage = MutableStateFlow(0)
+    var currentPage: StateFlow<Int> = _currentPage.asStateFlow()
+
+    fun NextPage()
+    {
+        _currentPage.value = currentPage.value + 1
+        viewModelScope.launch(Dispatchers.Default)
+        {
+            data.clear()
+            AgentAPI.fetchGames(currentPage.value).results.forEach {it ->
+                data.add(it)
+            }
+        }
+    }
+
+    fun PreviousPage()
+    {
+        if (currentPage.value != 0)
+        {
+            _currentPage.value = currentPage.value - 1
+            viewModelScope.launch(Dispatchers.Default)
+            {
+                data.clear()
+                AgentAPI.fetchGames(currentPage.value).results.forEach {it ->
+                    data.add(it)
+                }
+            }
+        }
+    }
     init {
         viewModelScope.launch(Dispatchers.Default)
         {
-            AgentAPI.fetchGames().results.forEach {it ->
+            AgentAPI.fetchGames(currentPage.value).results.forEach {it ->
                 data.add(it)
             }
         }
