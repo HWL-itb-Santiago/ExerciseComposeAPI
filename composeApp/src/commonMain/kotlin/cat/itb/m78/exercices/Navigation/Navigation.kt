@@ -4,13 +4,19 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import cat.itb.m78.exercices.APIAgents.Agents
+import cat.itb.m78.exercices.APIGamePage.GamePage
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 object Destination
 {
     @Serializable
-    data object Screen1
+    data object HomePage
+    @Serializable
+    data class GamePage(val gameData: Long)
 }
 
 @Composable
@@ -19,12 +25,19 @@ fun Navigation()
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = Destination.Screen1
+        startDestination = Destination.HomePage
     )
     {
-        composable<Destination.Screen1>
+        composable<Destination.HomePage>
         {
-            Agents()
+            Agents {gameData ->
+                navController.navigate(Destination.GamePage(gameData))
+            }
+        }
+        composable<Destination.GamePage>
+        { backStack ->
+            val message = backStack.toRoute<Destination.GamePage>().gameData
+            GamePage({navController.navigate(Destination.HomePage)}, message)
         }
     }
 }

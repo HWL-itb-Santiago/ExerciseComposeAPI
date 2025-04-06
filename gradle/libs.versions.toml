@@ -15,6 +15,7 @@ kotlinx-datetime = "0.6.1"
 hotreload = "1.0.0-dev.32.1"
 roomCompiler = "2.6.1"
 roomCommonJvm = "2.7.0-rc02"
+foundationAndroid = "1.7.8"
 
 [libraries]
 
@@ -42,6 +43,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }
 androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
+androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
 
 [plugins]
 

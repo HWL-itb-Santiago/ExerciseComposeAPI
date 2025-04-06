@@ -114,6 +114,7 @@ android {
 dependencies {
     implementation(libs.androidx.room.compiler)
     implementation(libs.androidx.room.common.jvm)
+    implementation(libs.androidx.foundation.android)
     androidTestImplementation(libs.androidx.uitest.junit4)
     debugImplementation(libs.androidx.uitest.testManifest)
 }
