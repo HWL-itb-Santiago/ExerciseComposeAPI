@@ -150,19 +150,21 @@ fun Agents(goToGamePage: (Long) -> Unit) {
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 title = {
-                    Text(
-                        "GameDB",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 50.dp)
-                    )
+
                 },
                 navigationIcon = {
-                    Text(
-                        "GameDB",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 50.dp)
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 50.dp)
                             .clickable(onClick = {})
+
                     )
+                    {
+                        Text(
+                            "GameDB",
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 },
                 actions = {
                     Button(
@@ -222,7 +224,7 @@ fun Agents(goToGamePage: (Long) -> Unit) {
             }
         } else if (!isSearching) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2), // Dos columnas
+                columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -236,7 +238,7 @@ fun Agents(goToGamePage: (Long) -> Unit) {
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(1), // Dos columnas
+                columns = GridCells.Fixed(1),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
@@ -256,7 +258,7 @@ fun Agents(goToGamePage: (Long) -> Unit) {
             onSearch = { query -> viewModel.onSearch(query) },
             searchResults = filteredGames.map {
                 it.name ?: ""
-            } // Mapea solo los nombres de los juegos
+            }
         )
     }
     println(filteredGames.map { it.name ?: "" })
