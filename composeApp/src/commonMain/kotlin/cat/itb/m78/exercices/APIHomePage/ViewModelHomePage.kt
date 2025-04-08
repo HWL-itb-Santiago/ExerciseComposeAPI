@@ -2,8 +2,10 @@ package cat.itb.m78.exercices.APIHomePage
 
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cat.itb.m78.exercices.APIGamePage.Game
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -36,7 +38,7 @@ data class Result(
     val tba: Boolean? = null,
     @SerialName("background_image")
     val backgroundImage: String? = null,
-    val rating: Double? = 0.0,
+    val rating: Double? = null,
     @SerialName("rating_top")
     val ratingTop: Long? = null,
     //val ratings: Map<String>,
@@ -99,6 +101,12 @@ object AgentAPI {
         val response: HttpResponse = client.get("https://api.rawg.io/api/games?key=f065fafb79d44605a13510e272fc4e75$pageQuery")
         return response.body()
     }
+
+    suspend fun fetchGamePerSlug(slug: String): GameResponse
+    {
+        val response: HttpResponse = client.get("https://api.rawg.io/api/games?search=${slug}&key=f065fafb79d44605a13510e272fc4e75")
+        return response.body()
+    }
 }
 
 class ViewModelAgents: ViewModel()
@@ -128,12 +136,17 @@ class ViewModelAgents: ViewModel()
         _isSearching.value = false
     }
     fun onSearch(query: String) {
-        if (query.isEmpty()) {
+        if (query.isBlank()) {
             _isSearching.value = false
             _filteredGames.value = data.value
         } else {
             _isSearching.value = true
-            _filteredGames.value = data.value.filter { it.name?.contains(query, ignoreCase = true) == true }
+            val filteredGameList = _filteredGames.value.toMutableList()
+            viewModelScope.launch {
+                val response = AgentAPI.fetchGamePerSlug(query)
+                _filteredGames.value = response.results ?: emptyList()
+            }
+            _filteredGames.value = filteredGameList.filter { it.name?.contains(query, ignoreCase = true) == true }
         }
     }
 
@@ -151,7 +164,8 @@ class ViewModelAgents: ViewModel()
             _gamesPerPage.add(page.toList())
         }
     }
-    fun loadGames(page: Int) {
+
+    private fun loadGames(page: Int) {
         viewModelScope.launch {
             val result = AgentAPI.fetchGames(page)
             result.results?.let {gamesData ->
@@ -162,24 +176,16 @@ class ViewModelAgents: ViewModel()
         }
     }
 
-    fun NextPage()
+    fun MoreGames()
     {
-        _currentPage.value += 1
+        _currentPage.value++
+        loadGames(currentPage.value)
     }
 
-    fun PreviousPage()
-    {
-        if (currentPage.value > 1)
-        {
-            _currentPage.value -= 1
-        }
-    }
     init {
         if (_data.value.isEmpty())
         {
-            for (page in 1..15) {
-                loadGames(page)
-            }
+            loadGames(currentPage.value)
         }
     }
 }
