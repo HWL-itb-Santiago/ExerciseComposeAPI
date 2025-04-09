@@ -5,11 +5,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import cat.itb.m78.exercices.APIAgents.Agents
+import cat.itb.m78.exercices.APIAgents.HomePage
 import cat.itb.m78.exercices.APIGamePage.GamePage
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 object Destination
 {
@@ -30,7 +28,7 @@ fun Navigation()
     {
         composable<Destination.HomePage>
         {
-            Agents {gameData ->
+            HomePage { gameData ->
                 navController.navigate(Destination.GamePage(gameData))
             }
         }
