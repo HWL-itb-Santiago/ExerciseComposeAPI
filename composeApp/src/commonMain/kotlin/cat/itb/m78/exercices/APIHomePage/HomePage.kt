@@ -27,7 +27,12 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -58,8 +63,10 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cat.itb.m78.exercices.APIGamePage.ViewModelGamePage
 import cat.itb.m78.exercices.APIHomePage.Result
 import cat.itb.m78.exercices.APIHomePage.ViewModelAgents
+import cat.itb.m78.exercices.database
 import coil3.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,25 +112,6 @@ fun SimpleSearchBar(
             onExpandedChange = { expanded = false },
         )
         {
-//            LazyColumn(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//
-//            ) {
-//                items(searchResults) { result ->
-//                    ListItem(
-//                        headlineContent = { Text(result) },
-//                        modifier = Modifier
-//                            .clickable {
-//                                textFieldState.edit { replace(0, length, result) }
-//                                expanded = false
-//                                onSearch(textFieldState.text.toString())
-//                            }
-//                            .background(color = Color.Black)
-//
-//                    )
-//                }
-//            }
         }
         if (expanded) {
             Box(
@@ -189,7 +177,16 @@ fun HomePage(goToGamePage: (Long) -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Aquí puedes agregar contenido si lo deseas
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = "HomePage",
+                        modifier = Modifier.clickable(onClick = {})
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Favorites",
+                        modifier = Modifier.clickable(onClick = {})
+                    )
                 }
             }
         }
@@ -213,22 +210,34 @@ fun HomePage(goToGamePage: (Long) -> Unit) {
                         CircularProgressIndicator()
                     }
                 } else if (!isSearching) {
-                    GameGrid(innerPadding, 2, currentGames, { viewModel.MoreGames() }, goToGamePage)
+                    GameGrid(
+                        innerPadding,
+                        2,
+                        currentGames,
+                        { viewModel.MoreGames() },
+                        goToGamePage,
+                        false
+                    )
                 } else {
-                    GameGrid(innerPadding, 2, filteredGames, { viewModel.MoreGames() }, goToGamePage)
+                    GameGrid(
+                        innerPadding,
+                        2,
+                        filteredGames,
+                        { viewModel.MoreGames() },
+                        goToGamePage,
+                        true
+                    )
                 }
             }
         }
     }
-
-    println(currentGames.size)
-    println(filteredGames.map { it.name ?: "" })
-    println(filteredGames.map { it.id ?: "" })
+    var list = database.myTableQueries.selectAll().executeAsList()
+    list.forEach { println(it.gameName) }
 }
 
 
 @Composable
-fun GameGrid(innerPadding: PaddingValues, colSize: Int, games: List<Result>, loadMoreGames: () -> Unit, goToGamePage: (Long) -> Unit)
+fun GameGrid(innerPadding: PaddingValues, colSize: Int, games: List<Result>,loadMoreGames: () -> Unit, goToGamePage: (Long) -> Unit, isSearching: Boolean)
 {
     var visibleGames by remember { mutableStateOf(games.take(games.size)) } // Muestra solo los primeros 10 juegos por defecto
     var isLoading by remember { mutableStateOf(false) } // Controla si se está cargando más contenido
@@ -243,10 +252,10 @@ fun GameGrid(innerPadding: PaddingValues, colSize: Int, games: List<Result>, loa
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(visibleGames) { game ->
-            GameCard(game, goToGamePage = { game.id?.let { goToGamePage(it) } })
+            GameCard(game,goToGamePage = { game.id?.let { goToGamePage(it) } })
         }
         item {
-            if (!isLoading) {
+            if (!isLoading && !isSearching) {
                 IconButton(onClick = {
                     isLoading = true
                     loadMoreGames()// Llamada a la función para cargar más juegos
@@ -254,7 +263,7 @@ fun GameGrid(innerPadding: PaddingValues, colSize: Int, games: List<Result>, loa
                     Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "More")
                 }
 
-            } else {
+            } else if (!isSearching) {
                 CircularProgressIndicator() // Muestra un indicador de carga mientras se cargan más juegos
             }
         }
@@ -266,14 +275,45 @@ fun GameGrid(innerPadding: PaddingValues, colSize: Int, games: List<Result>, loa
     }
 }
 @Composable
-fun GameCard(game: Result, goToGamePage: () -> Unit) {
+fun GameCard(
+    game: Result,
+    goToGamePage: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val viewModel = viewModel { ViewModelAgents() }
+    val gameOnFavorites = remember { mutableStateOf(false) }
+
+    LaunchedEffect(game.id) {
+        val exists  = viewModel.favoriteList.value.contains(game.id)
+        gameOnFavorites.value = exists
+    }
+
     BoxWithConstraints(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(12.dp)
     ) {
         val isCompact = maxWidth < 500.dp
-        val isWidth = maxWidth < 800.dp
+        val isMedium = maxWidth < 800.dp
+
+        val imageSize = when {
+            isCompact -> 100.dp
+            isMedium -> 150.dp
+            else -> 250.dp
+        }
+
+        val textSize = when {
+            isCompact -> 12.sp
+            isMedium -> 15.sp
+            else -> 25.sp
+        }
+
+        val titleSize = when {
+            isCompact -> 16.sp
+            isMedium -> 20.sp
+            else -> 30.sp
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -284,8 +324,9 @@ fun GameCard(game: Result, goToGamePage: () -> Unit) {
                 model = game.backgroundImage,
                 contentDescription = game.name,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(if (isCompact) 100.dp else if ((isWidth))150.dp else 250.dp)
+                modifier = Modifier.size(imageSize)
             )
+
             Column(
                 modifier = Modifier
                     .padding(start = 12.dp)
@@ -294,41 +335,73 @@ fun GameCard(game: Result, goToGamePage: () -> Unit) {
                 game.name?.let {
                     Text(
                         text = it,
-                        fontSize = if (isCompact) 16.sp else if (isWidth)20.sp else 30.sp,
+                        fontSize = titleSize,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
-                Text(
-                    text = "Rating: ${game.rating ?: ""} ★",
-                    fontSize = if (isCompact) 12.sp else if (isWidth)15.sp else 25.sp,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Released: ${game.released ?: ""}",
-                    fontSize = if (isCompact) 12.sp else if (isWidth)15.sp else 25.sp,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = game.esrbRating?.name ?: "",
-                    fontSize = if (isCompact) 12.sp else if (isWidth)15.sp else 25.sp,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+
+                game.rating?.let {
+                    Text(
+                        text = "Rating: $it ★",
+                        fontSize = textSize,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                game.metacritic?.let {
+                    Text(
+                        text = "Metacritic: $it",
+                        fontSize = textSize,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                game.released?.let {
+                    Text(
+                        text = "Released: $it",
+                        fontSize = textSize,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                game.esrbRating?.name?.let {
+                    Text(
+                        text = it,
+                        fontSize = textSize,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {},
-                    modifier = Modifier
-                        .defaultMinSize(minHeight = 36.dp)
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
+                        // Lógica de añadir/quitar de favoritos
+                        if (!gameOnFavorites.value) {
+                            viewModel.addGameToFavorite(game)
+
+                        } else
+                            viewModel.removeGameFromFavorite(game)
+                        gameOnFavorites.value = !gameOnFavorites.value
+                    }
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Añadir a favoritos")
+                    Icon(
+                        imageVector = if (gameOnFavorites.value) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorito",
+                        tint = if (gameOnFavorites.value) Color.Red else Color.Gray,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    Text("Favorito")
                 }
             }
         }
     }
 }
+
 

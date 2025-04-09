@@ -6,16 +6,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cat.itb.m78.exercices.APIGamePage.Game
+import cat.itb.m78.exercices.database
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -39,24 +42,9 @@ data class Result(
     @SerialName("background_image")
     val backgroundImage: String? = null,
     val rating: Double? = null,
-    @SerialName("rating_top")
-    val ratingTop: Long? = null,
-    //val ratings: Map<String>,
-    @SerialName("ratings_count")
-    val ratingsCount: Long? = null,
-    @SerialName("reviews_text_count")
-    val reviews_text_count: Int? = 0, //  Asegura que sea
-    val added: Long? = null,
-    //@SerialName("added_by_status")
-    //val addedByStatus: Map<String, String>,
     val metacritic: Long? = null,
-    val playtime: Long? = null,
-    @SerialName("suggestions_count")
-    val suggestionsCount: Long? = null,
-    val updated: String? = null,
     @SerialName("esrb_rating")
     val esrbRating: EsrbRating? = null,
-    val platforms: List<Platform>? = null,
 )
 
 @Serializable
@@ -64,27 +52,6 @@ data class EsrbRating(
     val id: Long? = null,
     val slug: String? = null,
     val name: String? = null,
-)
-
-@Serializable
-data class Platform(
-    val platform: Platform2? = null,
-    @SerialName("released_at")
-    val releasedAt: String? = null,
-    val requirements: Requirements? = null
-)
-
-@Serializable
-data class Platform2(
-    val id: Long? = null,
-    val slug: String? = null,
-    val name: String? = null,
-)
-
-@Serializable
-data class Requirements(
-    val minimum: String? = null,
-    val recommended: String? = null,
 )
 
 object AgentAPI {
@@ -123,7 +90,8 @@ class ViewModelAgents: ViewModel()
     private var _currentPage = MutableStateFlow(1)
     var currentPage: StateFlow<Int> = _currentPage.asStateFlow()
 
-    private var _gamesPerPage = mutableListOf<List<Result>>()
+    private var _favoriteList = MutableStateFlow<List<Long>>(emptyList())
+    val favoriteList: StateFlow<List<Long>> = _favoriteList.asStateFlow()
 
     private val _filteredGames = MutableStateFlow<List<Result>>(emptyList())
     val filteredGames: StateFlow<List<Result>> = _filteredGames.asStateFlow()
@@ -135,6 +103,7 @@ class ViewModelAgents: ViewModel()
         _filteredGames.value = data.value
         _isSearching.value = false
     }
+
     fun onSearch(query: String) {
         if (query.isBlank()) {
             _isSearching.value = false
@@ -147,21 +116,6 @@ class ViewModelAgents: ViewModel()
                 _filteredGames.value = response.results ?: emptyList()
             }
             _filteredGames.value = filteredGameList.filter { it.name?.contains(query, ignoreCase = true) == true }
-        }
-    }
-
-    fun clasifiedGamePerPage()
-    {
-        var page = mutableListOf<Result>()
-        for (i in _data.value.indices) {
-            page.add(_data.value[i])
-            if ((i + 1) % 20 == 0) {
-                _gamesPerPage.add(page.toList())
-                page.clear()
-            }
-        }
-        if (page.isNotEmpty()) {
-            _gamesPerPage.add(page.toList())
         }
     }
 
@@ -180,6 +134,45 @@ class ViewModelAgents: ViewModel()
     {
         _currentPage.value++
         loadGames(currentPage.value)
+    }
+
+    fun addGameToFavorite(game: Result?)
+    {
+        val currentList = _favoriteList.value.toMutableList()
+        if (game != null && !currentList.contains(game.id)) {
+            game.id?.let { currentList.add(it) }
+            _favoriteList.value = currentList
+        }
+//        viewModelScope.launch {
+//            withContext(Dispatchers.Default)
+//            {
+//                database.myTableQueries.insert(
+//                    id = game?.id,
+//                    gameName = game?.name ?: "",
+//                    gameDescription = game?.description ?: "",
+//                    gameDataRealesed = game?.released ?: "",
+//                    gameImage = game?.backgroundImage ?: "",
+//                    gameRanking = game?.rating ?: 0.0,
+//                    gameType = game?.genres?.joinToString(",") { it.name.toString() }
+//                        ?: "",
+//                    gameDevelopedBy = game?.developers?.firstOrNull()?.name
+//                        ?: "",
+//                    gamePublisherBy = game?.publishers?.firstOrNull()?.name
+//                        ?: "",
+//                    gamePlatform1 = game?.platforms?.getOrNull(0)?.platform?.name,
+//                    gamePlatform2 = game?.platforms?.getOrNull(1)?.platform?.name,
+//                    gamePlatform3 = game?.platforms?.getOrNull(2)?.platform?.name
+//                )
+//            }
+//        }
+    }
+
+    fun removeGameFromFavorite(game: Result) {
+        val currentList = _favoriteList.value.toMutableList()
+        if (currentList.contains(game.id)) {
+            game.id?.let { currentList.remove(it) }
+            _favoriteList.value = currentList
+        }
     }
 
     init {

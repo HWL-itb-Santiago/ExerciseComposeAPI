@@ -10,11 +10,11 @@ import kotlinx.coroutines.withContext
 class QuerysViewModel : ViewModel()
 {
     init {
-        viewModelScope.launch {
-            withContext(Dispatchers.Default){
-                database.myTableQueries.insert("some text")
-            }
+//        viewModelScope.launch {
+//            withContext(Dispatchers.Default){
+//                database.myTableQueries.insert("some text")
+//            }
             // do after insert
         }
-    }
+    //}
 }

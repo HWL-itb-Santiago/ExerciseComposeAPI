@@ -17,8 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -30,81 +33,180 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 
 @Composable
 fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
-    val gamePageViewModel = viewModel { ViewModelGamePage(gameId) }
-    val gameInfo by gamePageViewModel.gameData.collectAsState()
+    val viewModel = viewModel { ViewModelGamePage(gameId) }
+    val game by viewModel.gameData.collectAsState()
 
-    if (gameInfo == null) {
-        Column(
-            modifier = Modifier
+    if (game == null) {
+        Box(
+            Modifier
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator()
         }
     } else {
         BoxWithConstraints(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                item {
-                    val isCompact = maxWidth < 500.dp
-                    val isMediumWidth = maxWidth in 500.dp..800.dp
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        )
+        {
+            val isCompact = maxWidth < 500.dp
+            val isMedium = maxWidth in 500.dp..800.dp
 
-                    AsyncImage(
-                        model = gameInfo?.backgroundImage,
-                        contentDescription = gameInfo?.nameOriginal,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(if (isCompact) 100.dp else if (isMediumWidth) 250.dp else 550.dp)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+
+                item {
+                    game?.backgroundImage?.let {
+                        AsyncImage(
+                            model = it,
+                            contentDescription = game?.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .padding(top = 50.dp)
+                                .fillMaxWidth()
+                                .height(
+                                    when {
+                                        isCompact -> 180.dp
+                                        isMedium -> 480.dp
+                                        else -> 620.dp
+                                    }
+                                )
+                                .clip(RoundedCornerShape(16.dp)),
+
+                            )
+                    }
+                }
+
+                item {
+                    Text(
+                        text = game?.name ?: "Unknown Game",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold
+                        )
                     )
                 }
 
                 item {
-                    gameInfo?.name?.let {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = it,
-                            fontSize = when {
-                                maxWidth < 500.dp -> 16.sp
-                                maxWidth in 500.dp..800.dp -> 20.sp
-                                else -> 30.sp
-                            },
-                            fontWeight = FontWeight.Bold,
+                            "⭐ ${game?.rating ?: 0.0}",
                             style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            "📅 ${game?.released ?: "?"}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        game?.genres?.take(2)?.forEach {
+                            it.name?.let { name ->
+                                Text(
+                                    text = "🎮 $name",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.primaryContainer,
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Description",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Text(
+                            text = game?.descriptionRaw ?: "No description available.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(12.dp)
                         )
                     }
                 }
 
                 item {
-                    gameInfo?.descriptionRaw?.let { Text(it) }
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        game?.developers?.take(3)?.forEach {
+                            it.name?.let { devName ->
+                                Text(
+                                    "👨‍💻 Developed by: $devName",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+
+                        game?.publishers?.take(2)?.forEach {
+                            it.name?.let { pubName ->
+                                Text(
+                                    "📢 Publisher: $pubName",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+
+                        game?.platforms?.take(3)?.forEach {
+                            it.platform?.name?.let { platform ->
+                                Text(
+                                    "👨‍💻 On : $platform",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = backToHomePage,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Home Page")
+                        Icon(Icons.Default.ArrowBack, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Back to Home")
                     }
                 }
             }
         }
+
+
     }
+
 }
+
