@@ -142,29 +142,8 @@ class ViewModelAgents: ViewModel()
         if (game != null && !currentList.contains(game.id)) {
             game.id?.let { currentList.add(it) }
             _favoriteList.value = currentList
+
         }
-//        viewModelScope.launch {
-//            withContext(Dispatchers.Default)
-//            {
-//                database.myTableQueries.insert(
-//                    id = game?.id,
-//                    gameName = game?.name ?: "",
-//                    gameDescription = game?.description ?: "",
-//                    gameDataRealesed = game?.released ?: "",
-//                    gameImage = game?.backgroundImage ?: "",
-//                    gameRanking = game?.rating ?: 0.0,
-//                    gameType = game?.genres?.joinToString(",") { it.name.toString() }
-//                        ?: "",
-//                    gameDevelopedBy = game?.developers?.firstOrNull()?.name
-//                        ?: "",
-//                    gamePublisherBy = game?.publishers?.firstOrNull()?.name
-//                        ?: "",
-//                    gamePlatform1 = game?.platforms?.getOrNull(0)?.platform?.name,
-//                    gamePlatform2 = game?.platforms?.getOrNull(1)?.platform?.name,
-//                    gamePlatform3 = game?.platforms?.getOrNull(2)?.platform?.name
-//                )
-//            }
-//        }
     }
 
     fun removeGameFromFavorite(game: Result) {

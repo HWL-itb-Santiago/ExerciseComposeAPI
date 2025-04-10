@@ -270,7 +270,6 @@ class ViewModelGamePage(private val gameId: Long) : ViewModel()
             _gameData.value = gameDetails
         }
     }
-
     init {
         resetGame()
         getGame(gameId)

@@ -10,14 +10,6 @@ import cat.itb.m78.exercices.db.Database
 fun App()
 {
     Navigation()
-//    val myTableQueries = database.myTableQueries
-//    myTableQueries.insert("some Text")
-//    val all = myTableQueries.selectAll().executeAsList()
-//    println(all)
-//    var list = database.myTableQueries.selectAll().executeAsList()
-//    list.forEach {
-//        println(it.gameName)
-//    }
 }
 
 expect fun createDriver(): SqlDriver

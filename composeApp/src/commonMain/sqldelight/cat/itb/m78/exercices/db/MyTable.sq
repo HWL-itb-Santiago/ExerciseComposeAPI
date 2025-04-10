@@ -1,37 +1,23 @@
-CREATE TABLE Game (
-  id INTEGER  PRIMARY KEY NOT NULL,
+CREATE TABLE GameDB (
+  id INTEGER PRIMARY KEY NOT NULL,
   gameName TEXT NOT NULL,
-  gameDescription TEXT NOT NULL,
   gameDataRealesed TEXT NOT NULL,
   gameImage TEXT NOT NULL,
-  gameRanking REAL NOT NULL,
-  gameType TEXT NOT NULL,
-  gameDevelopedBy TEXT NOT NULL,
-  gamePublisherBy TEXT NOT NULL,
-  gamePlatform1 TEXT,
-  gamePlatform2 TEXT,
-  gamePlatform3 TEXT
+  gameRanking REAL NOT NULL
 );
-CREATE INDEX Game_full_name ON Game(gameName);
+CREATE INDEX Game_full_name ON GameDB(id);
 deleteById:
-DELETE FROM Game WHERE id = ?;
+DELETE FROM GameDB WHERE id = ?;
 selectById:
-SELECT * FROM Game WHERE id = ?;
+SELECT * FROM GameDB WHERE id = ?;
 selectAll:
-SELECT * FROM Game;
+SELECT * FROM GameDB;
 insert:
-INSERT INTO Game(
+INSERT INTO GameDB(
     id,
     gameName,
-    gameDescription,
     gameDataRealesed,
     gameImage,
-    gameRanking,
-    gameType,
-    gameDevelopedBy,
-    gamePublisherBy,
-    gamePlatform1,
-    gamePlatform2,
-    gamePlatform3
+    gameRanking
 )
-VALUES ( ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES ( ?, ?, ?, ?, ?);

@@ -49,6 +49,15 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
     val viewModel = viewModel { ViewModelGamePage(gameId) }
     val game by viewModel.gameData.collectAsState()
 
+    GamePage(
+        backToHomePage = backToHomePage,
+        game = game
+    )
+}
+
+@Composable
+fun GamePage(backToHomePage: () -> Unit, game: Game?)
+{
     if (game == null) {
         Box(
             Modifier
@@ -75,7 +84,6 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-
                 item {
                     game?.backgroundImage?.let {
                         AsyncImage(
@@ -97,30 +105,28 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                             )
                     }
                 }
-
                 item {
                     Text(
-                        text = game?.name ?: "Unknown Game",
+                        text = game.name ?: "Unknown Game",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.ExtraBold
                         )
                     )
                 }
-
                 item {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "⭐ ${game?.rating ?: 0.0}",
+                            "⭐ ${game.rating ?: 0.0}",
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            "📅 ${game?.released ?: "?"}",
+                            "📅 ${game.released ?: "?"}",
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        game?.genres?.take(2)?.forEach {
+                        game.genres?.take(2)?.forEach {
                             it.name?.let { name ->
                                 Text(
                                     text = "🎮 $name",
@@ -146,7 +152,7 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Text(
-                            text = game?.descriptionRaw ?: "No description available.",
+                            text = game.descriptionRaw ?: "No description available.",
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -158,10 +164,9 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                         )
                     }
                 }
-
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        game?.developers?.take(3)?.forEach {
+                        game.developers?.take(3)?.forEach {
                             it.name?.let { devName ->
                                 Text(
                                     "👨‍💻 Developed by: $devName",
@@ -170,7 +175,7 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                             }
                         }
 
-                        game?.publishers?.take(2)?.forEach {
+                        game.publishers?.take(2)?.forEach {
                             it.name?.let { pubName ->
                                 Text(
                                     "📢 Publisher: $pubName",
@@ -179,7 +184,7 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                             }
                         }
 
-                        game?.platforms?.take(3)?.forEach {
+                        game.platforms?.take(3)?.forEach {
                             it.platform?.name?.let { platform ->
                                 Text(
                                     "👨‍💻 On : $platform",
@@ -189,7 +194,6 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                         }
                     }
                 }
-
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
@@ -204,9 +208,6 @@ fun GamePage(backToHomePage: () -> Unit, gameId: Long) {
                 }
             }
         }
-
-
     }
-
 }
 

@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -25,16 +23,13 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,6 +41,7 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,9 +59,9 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cat.itb.m78.exercices.APIGamePage.ViewModelGamePage
 import cat.itb.m78.exercices.APIHomePage.Result
 import cat.itb.m78.exercices.APIHomePage.ViewModelAgents
+import cat.itb.m78.exercices.BBDD.QuerysViewModel
 import cat.itb.m78.exercices.database
 import coil3.compose.AsyncImage
 
@@ -74,10 +70,9 @@ import coil3.compose.AsyncImage
 fun SimpleSearchBar(
     textFieldState: TextFieldState,
     onSearch: (String) -> Unit,
-    searchResults: List<String>,
+    cleanSearch: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Controls expansion state of the search bar
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     Box(
@@ -105,7 +100,18 @@ fun SimpleSearchBar(
                     },
                     expanded = false,
                     onExpandedChange = { expanded = false },
-                    placeholder = { Text("Search") }
+                    placeholder = { Text("Search") },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .clickable {
+                                    cleanSearch()
+                                }
+                        )
+                    }
                 )
             },
             expanded = false,
@@ -128,16 +134,49 @@ fun SimpleSearchBar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun HomePage(goToGamePage: (Long) -> Unit) {
+fun HomePage(goToGamePage: (Long) -> Unit, goToFavorites: () -> Unit) {
     val viewModel = viewModel { ViewModelAgents() }
     val currentGames by viewModel.data.collectAsState()
     val filteredGames by viewModel.filteredGames.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
 
     val showSearchbar = remember { mutableStateOf(false) }
-
+    val textFieldState = viewModel.textFieldState.collectAsState().value
+    val moreGames = { viewModel.MoreGames() }
+    val cleanSearch = { viewModel.cleanSearch() }
+    val onSearch = { query: String ->
+        viewModel.onSearch(query)
+    }
+    HomePage(
+        goToGamePage = goToGamePage,
+        goToFavorites = goToFavorites,
+        showSearchbar = showSearchbar,
+        currentGames = currentGames,
+        filteredGames = filteredGames,
+        isSearching = isSearching,
+        textFieldState = textFieldState,
+        onSearch = onSearch,
+        moreGames = moreGames,
+        cleanSearch = cleanSearch
+    )
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomePage(
+    goToGamePage: (Long) -> Unit,
+    goToFavorites: () -> Unit,
+    showSearchbar: MutableState<Boolean> = remember { mutableStateOf(false) },
+    currentGames: List<Result>,
+    filteredGames: List<Result>,
+    isSearching: Boolean,
+    textFieldState: TextFieldState,
+    onSearch: (String) -> Unit,
+    moreGames: () -> Unit,
+    cleanSearch: () -> Unit
+    )
+{
     Scaffold(
         topBar = {
             TopAppBar(
@@ -174,31 +213,25 @@ fun HomePage(goToGamePage: (Long) -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 50.dp, end = 50.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Home,
-                        contentDescription = "HomePage",
-                        modifier = Modifier.clickable(onClick = {})
-                    )
-                    Icon(
                         imageVector = Icons.Default.Favorite,
                         contentDescription = "Favorites",
-                        modifier = Modifier.clickable(onClick = {})
+                        modifier = Modifier.clickable(onClick = goToFavorites)
                     )
                 }
             }
         }
     ) { innerPadding ->
-
         Column(modifier = Modifier.padding(innerPadding)) {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 if (showSearchbar.value) {
                     SimpleSearchBar(
-                        textFieldState = viewModel.textFieldState.value,
-                        onSearch = { query -> viewModel.onSearch(query) },
-                        searchResults = filteredGames.map { it.name ?: "" }
+                        textFieldState = textFieldState,
+                        onSearch = { query -> onSearch(query) },
+                        cleanSearch = { cleanSearch() },
                     )
                 }
                 if (currentGames.isEmpty()) {
@@ -214,7 +247,7 @@ fun HomePage(goToGamePage: (Long) -> Unit) {
                         innerPadding,
                         2,
                         currentGames,
-                        { viewModel.MoreGames() },
+                        moreGames,
                         goToGamePage,
                         false
                     )
@@ -223,7 +256,7 @@ fun HomePage(goToGamePage: (Long) -> Unit) {
                         innerPadding,
                         2,
                         filteredGames,
-                        { viewModel.MoreGames() },
+                        moreGames,
                         goToGamePage,
                         true
                     )
@@ -235,12 +268,11 @@ fun HomePage(goToGamePage: (Long) -> Unit) {
     list.forEach { println(it.gameName) }
 }
 
-
 @Composable
 fun GameGrid(innerPadding: PaddingValues, colSize: Int, games: List<Result>,loadMoreGames: () -> Unit, goToGamePage: (Long) -> Unit, isSearching: Boolean)
 {
-    var visibleGames by remember { mutableStateOf(games.take(games.size)) } // Muestra solo los primeros 10 juegos por defecto
-    var isLoading by remember { mutableStateOf(false) } // Controla si se está cargando más contenido
+    var visibleGames by remember { mutableStateOf(games.take(games.size)) }
+    var isLoading by remember { mutableStateOf(false) }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(colSize),
@@ -258,13 +290,13 @@ fun GameGrid(innerPadding: PaddingValues, colSize: Int, games: List<Result>,load
             if (!isLoading && !isSearching) {
                 IconButton(onClick = {
                     isLoading = true
-                    loadMoreGames()// Llamada a la función para cargar más juegos
+                    loadMoreGames()
                 }) {
                     Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "More")
                 }
 
             } else if (!isSearching) {
-                CircularProgressIndicator() // Muestra un indicador de carga mientras se cargan más juegos
+                CircularProgressIndicator()
             }
         }
     }
@@ -280,11 +312,11 @@ fun GameCard(
     goToGamePage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val viewModel = viewModel { ViewModelAgents() }
+    val viewModel = viewModel { QuerysViewModel() }
     val gameOnFavorites = remember { mutableStateOf(false) }
 
     LaunchedEffect(game.id) {
-        val exists  = viewModel.favoriteList.value.contains(game.id)
+        val exists  = viewModel.getAllGames().sortedBy { it.gameName }.any { it.gameName == game.name }
         gameOnFavorites.value = exists
     }
 
@@ -382,12 +414,18 @@ fun GameCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable {
-                        // Lógica de añadir/quitar de favoritos
                         if (!gameOnFavorites.value) {
-                            viewModel.addGameToFavorite(game)
-
+                            game.id?.let {
+                                viewModel.addGame(
+                                    gameId = it,
+                                    gameName = game.name?:"",
+                                    gameDataRealesed = game.released?:"",
+                                    gameImage = game.backgroundImage?:"",
+                                    gameRanking = game.rating?: 0.0
+                                )
+                            }
                         } else
-                            viewModel.removeGameFromFavorite(game)
+                            game.id?.let { viewModel.deleteGame(it) }
                         gameOnFavorites.value = !gameOnFavorites.value
                     }
                 ) {
